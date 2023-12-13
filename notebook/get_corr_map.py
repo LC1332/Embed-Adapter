@@ -191,6 +191,8 @@ for i in range(n_method):
             pseudo_key = (method_configs[i]["long_name"] , method_configs[j]["long_name"])
             pseudo_inverses[pseudo_key] = pseudo_inverse_ij
 
+
+
 print('保存伪逆')
 
 import pickle
@@ -198,8 +200,23 @@ import pickle
 with open('../data/pseudo_inverses_final.pkl', 'wb') as f:
     pickle.dump(pseudo_inverses, f)
 
-# for key in pseudo_inverses:
-#     print(key, pseudo_inverses[key].shape)
+
+#TODO torch版本计算伪逆
+# for i in range(n_method):
+#     corr_ii = corr_map[(i, i)]
+#     # 计算伪逆，使用PyTorch的pinverse函数
+#     pseudo_inv_ii = torch.pinverse(corr_ii)
+#
+#     for j in range(n_method):
+#         if i != j:
+#             # 同样，从GPU获取Tensor
+#             corr_ij = corr_map[(i, j)]
+#             # 使用PyTorch进行矩阵乘法
+#             pseudo_inverse_ij = torch.matmul(pseudo_inv_ii, corr_ij)
+#             pseudo_key = (method_configs[i]["long_name"], method_configs[j]["long_name"])
+#             # 这里不清楚后面是不是需要np数组，所以为了兼容性 转成np再保存
+#             pseudo_inverses[pseudo_key] = pseudo_inverse_ij.cpu().numpy()
+
 
 
 
