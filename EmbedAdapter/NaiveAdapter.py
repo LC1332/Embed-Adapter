@@ -38,7 +38,7 @@ class NaiveAdapter:
             # Load pseudo_inverses from pseudo_inverses.pkl
             import pickle
             with open('pseudo_inverses.pkl', 'rb') as file:
-                pseudo_inverses = pickle.load(file)
+                _pseudo_inverses = pickle.load(file)
 
     def convert(self, input_embedding, output_format):
         # 这里实现转换逻辑
