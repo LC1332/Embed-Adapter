@@ -12,17 +12,17 @@ class NaiveAdapter:
 
     def get_pesudo_inverse( self,source_long_name, target_long_name ):
         self.__download_pesudo_inverse()
-        global pseudo_inverses
+        global _pseudo_inverses
         pesudo_key = (source_long_name, target_long_name)
-        if pesudo_key in pseudo_inverses:
-            return pseudo_inverses[pesudo_key]
+        if pesudo_key in _pseudo_inverses:
+            return _pseudo_inverses[pesudo_key]
         else:
             print('pesudo inverse not found!', pesudo_key)
             return None
 
     def __download_pesudo_inverse( self ):
-        global pseudo_inverses
-        if pseudo_inverses is None:
+        global _pseudo_inverses
+        if _pseudo_inverses is None:
             print('now download pseudo inverse')
 
             import os
@@ -32,14 +32,14 @@ class NaiveAdapter:
                 import urllib.request
 
                 # Download pseudo_inverses.pkl from somelink.pkl
-                url = 'https://somelink.com/pseudo_inverses.pkl'
+                url = 'https://github.com/LC1332/Embed-Adapter/raw/main/data/pseudo_inverses.pkl'
                 urllib.request.urlretrieve(url, 'pseudo_inverses.pkl')
 
             # Load pseudo_inverses from pseudo_inverses.pkl
             import pickle
             with open('pseudo_inverses.pkl', 'rb') as file:
                 pseudo_inverses = pickle.load(file)
-                
+
     def convert(self, input_embedding, output_format):
         # 这里实现转换逻辑
         if isinstance(input_embedding, list):
