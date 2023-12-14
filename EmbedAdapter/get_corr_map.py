@@ -85,10 +85,14 @@ def get_bge_zh_embedding( text_or_texts):
 
 
 def bge_small_zh_fun( texts ):
-    return get_general_embeddings(texts, "BAAI/bge-small-zh-v1.5", return_tensor = True)
+    return get_general_embeddings(texts, config.corr_map.bge_small_config.long_name, return_tensor = True)
 
 def bge_base_zh_fun( texts ):
-    return get_general_embeddings(texts, "BAAI/bge-base-zh-v1.5", return_tensor = True)
+    return get_general_embeddings(texts, config.corr_map.bge_base_config.long_name, return_tensor = True)
+
+def bge_large_zh_fun( texts ):
+    return get_general_embeddings(texts,config.corr_map.bge_large_config.long_name, return_tensor = True)
+
 
 def compute_correlations(datas, method_configs, n, batch_size, n_method, texts):
     """ 计算不同方法之间的相关性 """
@@ -143,33 +147,33 @@ def compute_pseudo_inverses( method_configs, n_method, corr_map):
                 pseudo_inverses[pseudo_key] = pseudo_inverse_ij
     return pseudo_inverses
 
-
 def save(path,data):
     with open(path, 'wb') as f:
         pickle.dump(data, f)
+        
 def main():
     fname = config.corr_map.fname
     batch_size = config.corr_map.batch_size
     openai_config = config.corr_map.openai_config
     bge_small_config = config.corr_map.bge_small_config
     bge_base_config = config.corr_map.bge_base_config
+    bge_large_config = config.corr_map.bge_large_config
 
     datas = load_data(fname)
     texts = [data["text"] for data in datas]
     openai_config["embeddings"]  = [data["embedding"] for data in datas]
-    method_configs = [openai_config, bge_small_config, bge_base_config]
+    method_configs = [openai_config, bge_small_config, bge_base_config,bge_large_config]
 
-    forbidden_pairs = []  # 如果你某个pair不希望生成，需要把 model_A_2_model_B 放到这个list里面
+    # 如果你某个pair不希望生成，需要把 model_A_2_model_B 放到这个list里面
+    forbidden_pairs = []  
     n = len(texts)
     n_method = len(method_configs)
     corr_map = compute_correlations(datas, method_configs, n, batch_size, n_method, texts)
     pseudo_inverses=compute_pseudo_inverses(method_configs, n_method, corr_map)
 
     # Save corr_map to a pickle file
-    save('../data/pseudo_inverses_final.pkl',pseudo_inverses)
-if __name__ == "__main__":
-    # import config
-    # config=config.Config('../config.yml')
+    save(config.corr_map.save_path,pseudo_inverses)
 
+if __name__ == "__main__":
     main()
-    # print()
+    # print(config.corr_map.save_path)
