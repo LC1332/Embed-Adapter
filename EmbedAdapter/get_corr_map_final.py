@@ -1,16 +1,14 @@
 import json
-import math
+import pickle
 from transformers import AutoTokenizer, AutoModel
-import torch
 import numpy as np
+import torch
 from tqdm import tqdm
 
+from config import config
+
 # 配置参数
-BATCH_SIZE = 400
-GENERAL_BATCH_SIZE = 16
-MODEL_NAME_BGE_SMALL = "BAAI/bge-small-zh-v1.5"
-MODEL_NAME_BGE_BASE = "BAAI/bge-base-zh-v1.5"
-FILE_NAME = "your_file_name_here.json"
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # 模型和分词器池
 _model_pool = {}
@@ -29,26 +27,6 @@ def load_data(fname):
                 ])
     return datas
 
-openai_config = {
-    "name":"openai",
-    "long_name":"openai",
-    "embeddings":openai_embeddings, # 预先抽取的
-    "batch_embed_fun":None
-}
-bge_small_config = {
-    "name":"bge_small_zh_15",
-    "long_name":"BAAI/bge-small-zh-v1.5",
-    "embeddings":None,
-    "batch_embed_fun":bge_small_zh_fun
-}
-bge_base_config = {
-    "name":"bge_base_zh_15",
-    "long_name":"BAAI/bge-base-zh-v1.5",
-    "embeddings":None,
-    "batch_embed_fun":bge_base_zh_fun
-}
-
-
 # BAAI/bge-small-zh-v1.5
 def get_general_embeddings( sentences , model_name = "BAAI/bge-small-zh-v1.5" , return_tensor = False):
 
@@ -56,7 +34,7 @@ def get_general_embeddings( sentences , model_name = "BAAI/bge-small-zh-v1.5" , 
     global _tokenizer_pool
 
     if model_name not in _model_pool:
-        from transformers import AutoTokenizer, AutoModel
+
         _tokenizer_pool[model_name] = AutoTokenizer.from_pretrained(model_name)
         _model_pool[model_name] = AutoModel.from_pretrained(model_name).to(device)
 
@@ -113,44 +91,102 @@ def bge_small_zh_fun( texts ):
 def bge_base_zh_fun( texts ):
     return get_general_embeddings(texts, "BAAI/bge-base-zh-v1.5", return_tensor = True)
 
-def compute_correlations(datas, method_configs):
+def compute_correlations(datas, method_configs, n, batch_size, n_method, texts):
     """ 计算不同方法之间的相关性 """
-    texts = [data["text"] for data in datas]
-    n = len(texts)
-    n_methods = len(method_configs)
     corr_map = {}
-
-    for start_id in tqdm(range(0, n, BATCH_SIZE)):
-        end_id = min(start_id + BATCH_SIZE, n)
+    for start_id in tqdm(range(0, n, batch_size)):
+        end_id = min(start_id + batch_size, n)
         texts_batch = texts[start_id:end_id]
 
         method2embeddings = {}
-        for config in method_configs:
-            if config["embeddings"] is None:
-                embeddings = batch_process_embeddings(texts_batch, config["model_name"])
+
+        for method_config in method_configs:
+            method_name = method_config["name"]
+            if method_config["embeddings"] is None:
+                embeddings = method_config["batch_embed_fun"](texts_batch)
             else:
-                embeddings = config["embeddings"][start_id:end_id]
-            method2embeddings[config["name"]] = embeddings
+                embeddings = torch.tensor(method_config["embeddings"][start_id:end_id]).to(device)
 
-        # 略去具体的计算过程 ...
+            method2embeddings[method_name] = embeddings
 
+        for method_i in range(n_method):
+            for method_j in range(method_i, n_method):
+                corr_index = (method_i, method_j)
+                X_1 = method2embeddings[method_configs[method_i]["name"]]
+                X_2 = method2embeddings[method_configs[method_j]["name"]]
+                X1TX2 = X_1.T @ X_2
+                if corr_index in corr_map:
+                    corr_map[corr_index] += X1TX2
+                else:
+                    corr_map[corr_index] = X1TX2
+
+    for method_i in range(n_method - 1):
+        for method_j in range(method_i + 1, n_method):
+            corr_index = (method_i, method_j)
+            trans_index = (method_j, method_i)
+            corr_map[trans_index] = corr_map[corr_index].T
     return corr_map
 
+
+def compute_pseudo_inverses(datas, method_configs, n_method, corr_map):
+    # TODO 转到cpu上
+    for it in corr_map.keys():
+        corr_map[it] = corr_map[it].cpu()
+    pseudo_inverses={}
+    for i in range(n_method):
+        # 计算每个方法自身相关性矩阵的伪逆
+        corr_ii = corr_map[(i, i)].numpy()
+        pseudo_inv_ii = np.linalg.pinv(corr_ii)
+
+        for j in range(n_method):
+            if i != j:
+                # 计算交叉相关性矩阵
+                corr_ij = corr_map[(i, j)].numpy()
+                # 计算伪逆
+                pseudo_inverse_ij = pseudo_inv_ii @ corr_ij
+                pseudo_key = (method_configs[i]["long_name"], method_configs[j]["long_name"])
+                pseudo_inverses[pseudo_key] = pseudo_inverse_ij
+
+
+
+def save(path,data):
+    with open(path, 'wb') as f:
+        pickle.dump(data, f)
 def main():
-    
-    datas = load_data(FILE_NAME)
+    fname = config.corr_map.fname
+    batch_size = config.corr_map.batch_size
+    openai_config = config.openai_config
+    bge_small_config = config.bge_small_config
+    bge_base_config = config.bge_base_config
+
+    datas = load_data(fname)
     texts = [data["text"] for data in datas]
     openai_embeddings = [data["embedding"] for data in datas]
     method_configs = [openai_config, bge_small_config, bge_base_config]
     forbidden_pairs = []  # 如果你某个pair不希望生成，需要把 model_A_2_model_B 放到这个list里面
     n = len(texts)
-
+    batch_size=1
     n_method = len(method_configs)
-    corr_map = compute_correlations(datas, method_configs)
-
-
-
-    # 进一步处理 corr_map ...
+    corr_map = compute_correlations(datas, method_configs, n, batch_size, n_method, texts)
+    pseudo_inverses=compute_pseudo_inverses(datas, method_configs, n_method, corr_map)
+    print(pseudo_inverses)
+    # Save corr_map to a pickle file
+    # save('../data/pseudo_inverses_final.pkl',pseudo_inverses)
 
 if __name__ == "__main__":
-    main()
+
+
+
+
+
+    te.bge_small_config['name']
+    te.batch_embed_fun("1")
+    te
+    print()
+
+
+
+
+
+    # main()
+    print()

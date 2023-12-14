@@ -12,12 +12,18 @@ class DynamicConfig:
     def __init__(self, config_data: dict, parent_key: str = ""):
         for key, value in config_data.items():
             if isinstance(value, dict):
-                # 递归创建子配置对象,非叶结点属性名会有config后缀
-                setattr(self, key + "_config", DynamicConfig(value, key))
+                # 递归创建子配置对象
+                setattr(self, key , DynamicConfig(value, key))
             else:
                 # 直接设置属性
                 setattr(self, key, value)
-
+    def __getitem__(self, item):
+        try:
+            return getattr(self, item)
+        except AttributeError:
+            raise KeyError(f"Config item '{item}' not found")
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
     def __repr__(self):
         return str({k: v for k, v in self.__dict__.items()})
     
@@ -34,7 +40,7 @@ class Config:
             yaml_config: Dict[str, any] = yaml.safe_load(file.read())
             self.mirror: str = yaml_config["mirror"]
             # TODO: 自己的预处理配置
-            self.corr_map_config = DynamicConfig(yaml_config["corr_map"])
+            self.corr_map = DynamicConfig(yaml_config["corr_map"])
 
 
 parser = argparse.ArgumentParser()
@@ -42,3 +48,5 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-y", "--yml_config", type=str, default="../config.yml")
 args, _ = parser.parse_known_args()
 config = Config(args.yml_config)
+
+
