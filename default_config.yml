@@ -1,0 +1,11 @@
+# 全局配置
+dataset_path: "Data/"
+# 模型镜像源，默认huggingface，使用openi镜像源需指定openi_token
+mirror: ""
+
+
+#mypreprocess 自定义预处理配置
+get_corr_map:
+  #autoLable 自动标注配置
+  input: "data/zhwiki_2k_embedding.jsonl"
+  batch_size: 4
