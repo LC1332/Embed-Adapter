@@ -1,7 +1,8 @@
+import config
 fname = "../data/zhwiki_2k_embedding.jsonl"
 
 import json
-
+batch_size = 400
 raw_datas = []
 
 with open(fname, "r", encoding="utf-8") as f:
@@ -131,7 +132,7 @@ forbidden_pairs = [] # 如果你某个pair不希望生成，需要把 model_A_2_
 n = len(texts)
 
 n_method = len(method_configs)
-batch_size = 400
+
 
 from tqdm import tqdm
 
@@ -201,7 +202,8 @@ with open('../data/pseudo_inverses_final.pkl', 'wb') as f:
     pickle.dump(pseudo_inverses, f)
 
 
-#TODO torch版本计算伪逆
+#TODO torch版本计算伪逆:
+
 # for i in range(n_method):
 #     corr_ii = corr_map[(i, i)]
 #     # 计算伪逆，使用PyTorch的pinverse函数
