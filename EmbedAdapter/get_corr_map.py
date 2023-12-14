@@ -1,10 +1,17 @@
 import config
 fname = "../data/zhwiki_2k_embedding.jsonl"
+#TODO 检查GPU可用性
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from tqdm import tqdm
+import torch
 
 import json
-batch_size = 400
-raw_datas = []
 
+batch_size = 400
+
+
+
+raw_datas = []
 with open(fname, "r", encoding="utf-8") as f:
     for line in f:
         if line.strip() == "":
@@ -22,13 +29,9 @@ for data in raw_datas:
         "text": data["right"],
         "embedding": data["right_embedding"],
     })
-print(len(datas))
-# datas = datas[:16]
-from tqdm import tqdm
-import torch
 
-#TODO 检查GPU可用性
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 
 _model_pool = {}
 _tokenizer_pool = {}
@@ -204,20 +207,21 @@ with open('../data/pseudo_inverses_final.pkl', 'wb') as f:
 
 #TODO torch版本计算伪逆:
 
-# for i in range(n_method):
-#     corr_ii = corr_map[(i, i)]
-#     # 计算伪逆，使用PyTorch的pinverse函数
-#     pseudo_inv_ii = torch.pinverse(corr_ii)
-#
-#     for j in range(n_method):
-#         if i != j:
-#             # 同样，从GPU获取Tensor
-#             corr_ij = corr_map[(i, j)]
-#             # 使用PyTorch进行矩阵乘法
-#             pseudo_inverse_ij = torch.matmul(pseudo_inv_ii, corr_ij)
-#             pseudo_key = (method_configs[i]["long_name"], method_configs[j]["long_name"])
-#             # 这里不清楚后面是不是需要np数组，所以为了兼容性 转成np再保存
-#             pseudo_inverses[pseudo_key] = pseudo_inverse_ij.cpu().numpy()
+def get_pseudo_inverses_torch(): 
+    for i in range(n_method):
+        corr_ii = corr_map[(i, i)]
+        # 计算伪逆，使用PyTorch的pinverse函数
+        pseudo_inv_ii = torch.pinverse(corr_ii)
+
+        for j in range(n_method):
+            if i != j:
+                # 同样，从GPU获取Tensor
+                corr_ij = corr_map[(i, j)]
+                # 使用PyTorch进行矩阵乘法
+                pseudo_inverse_ij = torch.matmul(pseudo_inv_ii, corr_ij)
+                pseudo_key = (method_configs[i]["long_name"], method_configs[j]["long_name"])
+                # 这里不清楚后面是不是需要np数组，所以为了兼容性 转成np再保存
+                pseudo_inverses[pseudo_key] = pseudo_inverse_ij.cpu().numpy()
 
 
 

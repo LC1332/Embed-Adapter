@@ -5,7 +5,12 @@ mirror: ""
 
 
 #mypreprocess 自定义预处理配置
-get_corr_map:
+corr_map:
   #autoLable 自动标注配置
   input: "data/zhwiki_2k_embedding.jsonl"
   batch_size: 4
+
+
+
+
+
