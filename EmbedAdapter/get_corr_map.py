@@ -147,6 +147,26 @@ def compute_pseudo_inverses( method_configs, n_method, corr_map):
                 pseudo_inverses[pseudo_key] = pseudo_inverse_ij
     return pseudo_inverses
 
+
+def get_pseudo_inverses_torch(n_method, corr_map, method_configs, pseudo_inverses):
+    for i in range(n_method):
+        corr_ii = corr_map[(i, i)]
+        # 计算伪逆，使用PyTorch的pinverse函数
+        pseudo_inv_ii = torch.pinverse(corr_ii)
+
+        for j in range(n_method):
+            if i != j:
+                # 同样，从GPU获取Tensor
+                corr_ij = corr_map[(i, j)]
+                # 使用PyTorch进行矩阵乘法
+                pseudo_inverse_ij = torch.matmul(pseudo_inv_ii, corr_ij)
+                pseudo_key = (method_configs[i]["long_name"], method_configs[j]["long_name"])
+                # 这里不清楚后面是不是需要np数组，所以为了兼容性 转成np再保存
+                pseudo_inverses[pseudo_key] = pseudo_inverse_ij.cpu().numpy()
+
+
+
+
 def save(path,data):
     with open(path, 'wb') as f:
         pickle.dump(data, f)

@@ -1,0 +1,33 @@
+# 全局配置
+
+# 模型镜像源，默认huggingface，使用openi镜像源需指定openi_token
+mirror: ""
+
+
+corr_map:
+  fname: "../data/zhwiki_2k_embedding.jsonl"
+  save_path: '../data/pseudo_inverses.pkl'
+  batch_size: 400
+  openai_config:
+    "name": "openai"
+    "long_name": "openai"
+    "embeddings": "openai_embeddings" # 预先抽取的
+    "batch_embed_fun":
+  bge_small_config:
+    "name": "bge_small_zh_15"
+    "long_name": "BAAI/bge-small-zh-v1.5"
+    "embeddings":
+    "batch_embed_fun": "bge_small_zh_fun"
+  bge_base_config :
+    "name": "bge_base_zh_15"
+    "long_name": "BAAI/bge-base-zh-v1.5"
+    "embeddings":
+    "batch_embed_fun": "bge_base_zh_fun"
+  bge_large_config :
+    "name": "bge_large_zh_15"
+    "long_name": "BAAI/bge-large-zh-v1.5"
+    "embeddings":
+    "batch_embed_fun": "bge_large_zh_fun"
+
+
+
