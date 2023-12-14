@@ -1,11 +1,16 @@
+import json
+import math
 import config
+from transformers import AutoTokenizer, AutoModel
+import torch
+import numpy as np
+from tqdm import tqdm
+
 fname = "../data/zhwiki_2k_embedding.jsonl"
 #TODO 检查GPU可用性
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 from tqdm import tqdm
-import torch
 
-import json
 
 batch_size = 400
 
