@@ -2,7 +2,7 @@ from .model_name_mapping import MODEL_NAME_MAPPING
 import numpy as np
 
 class EmbedAdapter:
-    def __init__(self, source, output, implementation="naive"):
+    def __init__(self, source, output, implementation="hf"):
         self.source_long_name = MODEL_NAME_MAPPING.get(source, source)
         self.output_long_name = MODEL_NAME_MAPPING.get(output, output)
         self.implementation = implementation
@@ -12,6 +12,9 @@ class EmbedAdapter:
         if self.implementation == "naive":
             from .NaiveAdapter import NaiveAdapter
             return NaiveAdapter(self.source_long_name, self.output_long_name)
+        elif self.implementation == "hf":
+            from .HFAdapter import HFAdapter
+            return HFAdapter(self.source_long_name, self.output_long_name)
         # 可以添加更多的实现
         else:
             raise ValueError("Unknown implementation")
