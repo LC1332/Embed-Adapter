@@ -16,6 +16,9 @@ class EmbedAdapter:
             from .HFAdapter import HFAdapter
             return HFAdapter(self.source_long_name, self.output_long_name)
         # 可以添加更多的实现
+        elif self.implementation == "combine":
+            from .CombineAdapter import CombineAdapter
+            return CombineAdapter(self.source_long_name, self.output_long_name)
         else:
             raise ValueError("Unknown implementation")
 
